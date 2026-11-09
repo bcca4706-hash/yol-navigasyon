@@ -1,0 +1,6 @@
+{
+  "appId": "com.bbm.yol",
+  "appName": "Yol Navigasyon",
+  "webDir": "www",
+  "server": { "androidScheme": "https" }
+}

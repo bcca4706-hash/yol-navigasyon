@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Yol Navigasyon</title>
+<style>
+:root{--bg:#0b1220;--panel:#121a2b;--panel2:#1c2742;--txt:#e8eefc;--mut:#8a97b5;--acc:#e30a17;--go:#16a34a;--route:#3b82f6;--sh:24px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Roboto,sans-serif;overflow:hidden;user-select:none}
+#map{position:fixed;inset:0;background:#1a1f2b}
+.hide{display:none!important}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+/* arama */
+#top{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 12px);z-index:1000}
+.sbox{display:flex;align-items:center;background:var(--panel);border-radius:16px;box-shadow:0 6px 24px #0008;padding:0 6px 0 14px;height:52px}
+.sbox .ic{font-size:22px;color:var(--mut);margin-right:8px}
+#q{flex:1;background:none;border:0;outline:0;color:var(--txt);font-size:17px;height:100%}
+#q::placeholder{color:var(--mut)}
+#qx{width:40px;height:40px;font-size:18px;color:var(--mut)}
+#res{margin-top:8px;background:var(--panel);border-radius:16px;box-shadow:0 6px 24px #0008;max-height:55vh;overflow:auto}
+.rh{padding:10px 16px 4px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+.ri{padding:12px 16px;border-bottom:1px solid #ffffff0d;display:flex;gap:10px;align-items:center}
+.ri:last-child{border-bottom:0}
+.ri:active{background:var(--panel2)}
+.ri .tx{flex:1;min-width:0}
+.rn{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.rd{font-size:13px;color:var(--mut);flex-shrink:0}
+.mut{color:var(--mut)}
+/* yönlendirme bandı */
+#banner{position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top) + 10px);z-index:1000;background:var(--go);border-radius:18px;display:flex;align-items:center;gap:14px;padding:14px 16px;box-shadow:0 8px 28px #0009}
+#bIcon{font-size:46px;line-height:1;width:56px;text-align:center;flex-shrink:0}
+.bt{min-width:0;flex:1}
+#bDist{font-size:30px;font-weight:800;line-height:1.05}
+#bText{font-size:17px;font-weight:600;margin-top:2px}
+#bRoad{font-size:14px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+#bNext{position:fixed;left:22px;top:calc(env(safe-area-inset-top) + 128px);z-index:999;background:#0f5f2c;border-radius:0 0 12px 12px;padding:6px 12px;font-size:14px;box-shadow:0 6px 18px #0007}
+/* butonlar */
+#fabs{position:fixed;right:12px;bottom:calc(var(--sh) + 16px);z-index:1000;display:flex;flex-direction:column;gap:10px;transition:bottom .25s}
+#fabs button{width:50px;height:50px;border-radius:50%;background:var(--panel);box-shadow:0 4px 16px #0008;font-size:22px}
+#fLoc.off{color:var(--route)}
+#speed{position:fixed;left:12px;bottom:calc(var(--sh) + 16px);z-index:1000;width:70px;height:70px;border-radius:50%;background:#fff;color:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 16px #0008;border:4px solid #ddd;transition:bottom .25s}
+#speed b{font-size:26px;line-height:1}
+#speed small{font-size:11px;font-weight:600}
+/* alt panel */
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:1001;background:var(--panel);border-radius:22px 22px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);box-shadow:0 -8px 30px #0009}
+.dname{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dsub{font-size:13px;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum{display:flex;align-items:baseline;gap:12px;margin:12px 0;flex-wrap:wrap}
+.sum b{font-size:26px;color:#4ade80}
+.sum span{color:var(--mut);font-size:15px}
+.prof{display:flex;gap:8px;margin-bottom:12px}
+.prof button{flex:1;padding:10px 0;border-radius:12px;background:var(--panel2);font-size:14px}
+.prof button.on{background:var(--route);font-weight:700}
+.acts{display:flex;gap:8px}
+.acts button,#bEnd{padding:14px 0;border-radius:14px;background:var(--panel2);font-size:16px;font-weight:600}
+.acts .pri{flex:2;background:var(--route)}
+.acts #bSim{flex:1}
+.acts #bX{width:54px}
+#nv{display:flex;align-items:center;gap:12px}
+#nv .sum{flex:1;margin:0}
+#bEnd{background:var(--acc);padding:14px 22px}
+#load{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:#0006}
+.spin{width:46px;height:46px;border:5px solid #ffffff33;border-top-color:#fff;border-radius:50%;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#toast{position:fixed;left:50%;bottom:calc(var(--sh) + 90px);transform:translateX(-50%);z-index:3000;background:#000d;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:86vw;text-align:center}
+#toast.on{opacity:1}
+/* işaretler */
+.meI{background:none;border:0}
+.me{width:34px;height:34px;position:relative}
+.me .arr{position:absolute;inset:0;transition:transform .4s}
+.me .arr:before{content:"";position:absolute;left:5px;top:3px;width:24px;height:28px;background:#3b82f6;clip-path:polygon(50% 0,100% 100%,50% 76%,0 100%);filter:drop-shadow(0 0 2px #fff)}
+.me .dot{position:absolute;left:9px;top:9px;width:16px;height:16px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 6px #3b82f640}
+.pinI{background:none;border:0}
+.pin{width:30px;height:30px;border-radius:50% 50% 50% 0;background:var(--acc);transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 3px 10px #0008}
+.attr{position:absolute;left:4px;bottom:4px;font-size:9px;background:#0008;color:#bbb;padding:1px 5px;border-radius:4px;pointer-events:none;z-index:5}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="top">
+  <div class="sbox"><span class="ic">⌕</span><input id="q" placeholder="Nereye gidiyoruz?" autocomplete="off" enterkeyhint="search"><button id="qx" class="hide">✕</button></div>
+  <div id="res" class="hide"></div>
+</div>
+
+<div id="banner" class="hide">
+  <div id="bIcon">⬆</div>
+  <div class="bt"><div id="bDist">--</div><div id="bText"></div><div id="bRoad"></div></div>
+</div>
+<div id="bNext" class="hide"></div>
+
+<div id="fabs">
+  <button id="fTheme" title="Tema">◐</button>
+  <button id="fMute" title="Ses">🔊</button>
+  <button id="fLoc" title="Konumum">◎</button>
+</div>
+<div id="speed" class="hide"><b id="spd">0</b><small>km/sa</small></div>
+
+<div id="sheet" class="hide">
+  <div id="pv">
+    <div class="dname" id="dName"></div>
+    <div class="dsub" id="dSub"></div>
+    <div class="sum"><b id="pvTime"></b><span id="pvDist"></span><span id="pvEta"></span></div>
+    <div class="prof">
+      <button data-p="car" class="on">🚗 Araç</button>
+      <button data-p="bike">🚲 Bisiklet</button>
+      <button data-p="foot">🚶 Yaya</button>
+    </div>
+    <div class="acts"><button id="bGo" class="pri">▶ Başlat</button><button id="bSim">Simüle</button><button id="bX">✕</button></div>
+  </div>
+  <div id="nv" class="hide">
+    <div class="sum"><b id="nvTime"></b><span id="nvDist"></span><span id="nvEta"></span></div>
+    <button id="bEnd">Bitir</button>
+  </div>
+</div>
+
+<div id="load" class="hide"><div class="spin"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ---------- mini harita motoru (dış kütüphane yok, Leaflet API'si ile uyumlu) ---------- */
+const L=(()=>{
+const TS=256,MAXLAT=85.0511,PMap=globalThis.Map;
+const LL=(a,b)=>Array.isArray(a)?{lat:a[0],lng:a[1]}:(a&&a.lat!=null?{lat:a.lat,lng:a.lng}:{lat:a,lng:b});
+class P{constructor(x,y){this.x=x;this.y=y}
+  add(a){a=Array.isArray(a)?{x:a[0],y:a[1]}:a;return new P(this.x+a.x,this.y+a.y)}
+  subtract(a){a=Array.isArray(a)?{x:a[0],y:a[1]}:a;return new P(this.x-a.x,this.y-a.y)}}
+function proj(ll,z){const s=TS*Math.pow(2,z),lat=Math.max(-MAXLAT,Math.min(MAXLAT,ll.lat)),sn=Math.sin(lat*Math.PI/180);
+  return new P((ll.lng+180)/360*s,(0.5-Math.log((1+sn)/(1-sn))/(4*Math.PI))*s)}
+function unproj(p,z){const s=TS*Math.pow(2,z),n=Math.PI-2*Math.PI*p.y/s;return{lat:180/Math.PI*Math.atan(Math.sinh(n)),lng:p.x/s*360-180}}
+class Evt{on(t,f){(this._h=this._h||{})[t]=(this._h[t]||[]).concat(f);return this}fire(t,e){((this._h&&this._h[t])||[]).forEach(f=>f(e||{}))}}
+
+class MapV extends Evt{
+  constructor(id){super();this.el=document.getElementById(id);this.c={lat:0,lng:0};this.z=3;this.minZ=3;this.maxZ=19;this.layers=[];this.tiles={};
+    Object.assign(this.el.style,{overflow:'hidden',touchAction:'none'});
+    const mk=css=>{const d=document.createElement('div');d.style.cssText=css;return d};
+    this.tp=mk('position:absolute;inset:0;pointer-events:none');
+    this.cv=document.createElement('canvas');this.cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
+    this.mp=mk('position:absolute;inset:0;pointer-events:none');
+    this.at=document.createElement('div');this.at.className='attr';
+    this.el.append(this.tp,this.cv,this.mp,this.at);
+    this._ev();addEventListener('resize',()=>this._dirty());}
+  getSize(){return new P(this.el.clientWidth,this.el.clientHeight)}
+  getCenter(){return{lat:this.c.lat,lng:this.c.lng}}
+  getZoom(){return this.z}
+  project(ll,z){return proj(LL(ll),z==null?this.z:z)}
+  unproject(p,z){return unproj(p,z==null?this.z:z)}
+  _cz(z){return Math.max(this.minZ,Math.min(this.maxZ,z))}
+  setView(ll,z,o){ll=LL(ll);z=this._cz(z==null?this.z:z);cancelAnimationFrame(this._an);
+    if(o&&o.animate){const c0=this.getCenter(),z0=this.z,t0=performance.now(),d=(o.duration||.25)*1000;
+      const st=t=>{const k=Math.min(1,(t-t0)/d),e=k*(2-k);this.c={lat:c0.lat+(ll.lat-c0.lat)*e,lng:c0.lng+(ll.lng-c0.lng)*e};this.z=z0+(z-z0)*e;this._render();if(k<1)this._an=requestAnimationFrame(st)};
+      this._an=requestAnimationFrame(st)}
+    else{this.c=ll;this.z=z;this._dirty()}
+    return this}
+  fitBounds(b,o){o=o||{};const tl=o.paddingTopLeft||[0,0],br=o.paddingBottomRight||[0,0],sz=this.getSize();
+    const w=Math.max(20,sz.x-tl[0]-br[0]),h=Math.max(20,sz.y-tl[1]-br[1]);let z=this.maxZ;
+    for(;z>this.minZ;z-=0.25){const a=proj(b.nw,z),c=proj(b.se,z);if(c.x-a.x<=w&&c.y-a.y<=h)break}
+    const a=proj(b.nw,z),c=proj(b.se,z),m=new P((a.x+c.x)/2-(tl[0]-br[0])/2,(a.y+c.y)/2-(tl[1]-br[1])/2);
+    return this.setView(unproj(m,z),z)}
+  addLayer(l){if(!this.layers.includes(l)){this.layers.push(l);l._map=this;l._add&&l._add(this)}this._dirty();return this}
+  removeLayer(l){this.layers=this.layers.filter(x=>x!==l);l._rm&&l._rm(this);l._map=null;this._dirty();return this}
+  hasLayer(l){return this.layers.includes(l)}
+  _dirty(){if(this._q)return;this._q=requestAnimationFrame(()=>{this._q=0;this._render()})}
+  _px(ll){const sz=this.getSize(),c=proj(this.c,this.z),p=proj(ll,this.z);return new P(p.x-c.x+sz.x/2,p.y-c.y+sz.y/2)}
+  _ll(x,y){const sz=this.getSize(),c=proj(this.c,this.z);return unproj(new P(c.x+x-sz.x/2,c.y+y-sz.y/2),this.z)}
+  _zoomAround(ll,m,z){const sz=this.getSize(),p=proj(ll,z);this.z=z;this.c=unproj(new P(p.x-(m.x-sz.x/2),p.y-(m.y-sz.y/2)),z);this._dirty()}
+  _render(){
+    const sz=this.getSize();if(!sz.x||!sz.y)return;
+    const tl=this.layers.find(l=>l._tile),keep={};
+    if(tl){const tz=Math.max(0,Math.min(tl.maxZ,Math.round(this.z))),sc=Math.pow(2,this.z-tz),c=proj(this.c,tz),n=Math.pow(2,tz);
+      const x0=Math.floor((c.x-sz.x/2/sc)/TS),x1=Math.floor((c.x+sz.x/2/sc)/TS),y0=Math.max(0,Math.floor((c.y-sz.y/2/sc)/TS)),y1=Math.min(n-1,Math.floor((c.y+sz.y/2/sc)/TS));
+      for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){
+        const wx=((x%n)+n)%n,k=tl.id+'/'+tz+'/'+x+'/'+y;keep[k]=1;let im=this.tiles[k];
+        if(!im){im=new Image();im.draggable=false;im.alt='';
+          im.style.cssText='position:absolute;left:0;top:0;width:256px;height:256px;transform-origin:0 0;opacity:0;transition:opacity .2s;pointer-events:none';
+          im.onload=()=>im.style.opacity=1;
+          im.onerror=()=>{if(!im._fb){im._fb=1;im.src=`https://tile.openstreetmap.org/${tz}/${wx}/${y}.png`}};
+          im.src=tl.url(tz,wx,y);this.tiles[k]=im;this.tp.appendChild(im)}
+        im.style.transform=`translate(${(x*TS-c.x)*sc+sz.x/2}px,${(y*TS-c.y)*sc+sz.y/2}px) scale(${sc*1.004})`}
+    }
+    for(const k in this.tiles)if(!keep[k]){this.tiles[k].remove();delete this.tiles[k]}
+    const d=devicePixelRatio||1,cv=this.cv,W=Math.round(sz.x*d),H=Math.round(sz.y*d);
+    if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
+    const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,sz.x,sz.y);
+    for(const l of this.layers)l._draw&&l._draw(g,this);
+    for(const l of this.layers)l._pos&&l._pos(this);
+    this.at.textContent=tl?tl.attr:'';
+  }
+  _ev(){
+    const el=this.el,pts=new PMap();let drag=null,pinch=null,lp=0,moved=false,t0=0,lastTap=0,lpFired=false;
+    const rel=e=>{const r=el.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+    const startDrag=q=>{drag={x:q.x,y:q.y,c:proj(this.c,this.z),z:this.z}};
+    el.addEventListener('pointerdown',e=>{
+      if(e.target!==el)return;try{el.setPointerCapture(e.pointerId)}catch(_){}
+      const p=rel(e);pts.set(e.pointerId,p);cancelAnimationFrame(this._an);
+      if(pts.size===1){startDrag(p);moved=false;lpFired=false;t0=Date.now();clearTimeout(lp);
+        lp=setTimeout(()=>{if(!moved&&pts.size===1){lpFired=true;this.fire('contextmenu',{latlng:this._ll(p.x,p.y)})}},550)}
+      else if(pts.size===2){clearTimeout(lp);moved=true;const[a,b]=[...pts.values()],m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+        pinch={d:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),z:this.z,ll:this._ll(m.x,m.y)};drag=null;this.fire('dragstart')}
+    });
+    el.addEventListener('pointermove',e=>{
+      if(!pts.has(e.pointerId))return;const p=rel(e);pts.set(e.pointerId,p);
+      if(pinch&&pts.size>=2){const[a,b]=[...pts.values()],dd=Math.hypot(a.x-b.x,a.y-b.y);
+        this._zoomAround(pinch.ll,{x:(a.x+b.x)/2,y:(a.y+b.y)/2},this._cz(pinch.z+Math.log2(dd/pinch.d)));return}
+      if(drag&&!lpFired){const dx=p.x-drag.x,dy=p.y-drag.y;
+        if(!moved&&Math.hypot(dx,dy)>6){moved=true;clearTimeout(lp);this.fire('dragstart')}
+        if(moved){this.c=unproj(new P(drag.c.x-dx,drag.c.y-dy),drag.z);this._dirty()}}
+    });
+    const up=e=>{
+      if(!pts.has(e.pointerId))return;const p=pts.get(e.pointerId);pts.delete(e.pointerId);clearTimeout(lp);
+      if(pts.size===1){pinch=null;startDrag([...pts.values()][0]);return}
+      if(pts.size)return;pinch=null;drag=null;
+      if(!moved&&!lpFired&&e.type==='pointerup'&&Date.now()-t0<500){const now=Date.now();
+        if(now-lastTap<300){lastTap=0;this._zoomAround(this._ll(p.x,p.y),p,this._cz(Math.round(this.z)+1))}
+        else{lastTap=now;this.fire('click',{latlng:this._ll(p.x,p.y)})}}
+    };
+    el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+    el.addEventListener('wheel',e=>{e.preventDefault();const p=rel(e);this._zoomAround(this._ll(p.x,p.y),p,this._cz(this.z-e.deltaY*0.002))},{passive:false});
+    el.addEventListener('contextmenu',e=>e.preventDefault());
+  }
+}
+let tid=0;
+class Tile{constructor(u,o){this._tile=1;this.id='t'+(tid++);this.u=u;this.o=o||{};this.maxZ=Math.min(this.o.maxZoom||19,19);this.attr=this.o.attribution||''}
+  url(z,x,y){const s=this.o.subdomains||'abc';return this.u.replace('{s}',s[(x+y)%s.length]).replace('{z}',z).replace('{x}',x).replace('{y}',y).replace('{r}',(devicePixelRatio||1)>1?'@2x':'')}
+  addTo(m){m.addLayer(this);return this}}
+class Poly{constructor(a,o){this.o=o||{};this.setLatLngs(a)}
+  addTo(m){m.addLayer(this);return this}
+  setLatLngs(a){this.ll=a.map(x=>LL(x));this.w=this.ll.map(p=>proj(p,0));this._map&&this._map._dirty();return this}
+  _draw(g,m){if(this.w.length<2)return;const sz=m.getSize(),s=Math.pow(2,m.z),c=proj(m.c,m.z),ox=sz.x/2-c.x,oy=sz.y/2-c.y;
+    g.beginPath();for(let i=0;i<this.w.length;i++){const x=this.w[i].x*s+ox,y=this.w[i].y*s+oy;i?g.lineTo(x,y):g.moveTo(x,y)}
+    g.globalAlpha=this.o.opacity==null?1:this.o.opacity;g.strokeStyle=this.o.color||'#3388ff';g.lineWidth=this.o.weight||3;g.lineJoin='round';g.lineCap='round';g.stroke();g.globalAlpha=1}}
+class Circle{constructor(ll,o){this.c=LL(ll);this.o=o||{};this.r=this.o.radius||1}
+  addTo(m){m.addLayer(this);return this}
+  setLatLng(ll){this.c=LL(ll);this._map&&this._map._dirty();return this}
+  setRadius(r){this.r=r;this._map&&this._map._dirty();return this}
+  _draw(g,m){const q=m._px(this.c),mpp=156543.034*Math.cos(this.c.lat*Math.PI/180)/Math.pow(2,m.z),r=Math.max(1,this.r/mpp);
+    g.beginPath();g.arc(q.x,q.y,r,0,Math.PI*2);g.fillStyle=this.o.color||'#3388ff';g.globalAlpha=this.o.fillOpacity==null?.2:this.o.fillOpacity;g.fill();
+    g.globalAlpha=1;g.lineWidth=this.o.weight||1;g.strokeStyle=this.o.color||'#3388ff';g.stroke()}}
+class Marker{constructor(ll,o){this.ll=LL(ll);this.o=o||{};this.icon=this.o.icon||{};this.zi=this.o.zIndexOffset||0}
+  addTo(m){m.addLayer(this);return this}
+  _add(m){const i=this.icon,s=i.iconSize||[20,20];this.el=document.createElement('div');this.el.className=i.className||'';this.el.innerHTML=i.html||'';
+    this.el.style.cssText=`position:absolute;left:0;top:0;width:${s[0]}px;height:${s[1]}px;z-index:${this.zi}`;m.mp.appendChild(this.el)}
+  _rm(){this.el&&this.el.remove()}
+  _pos(m){const q=m._px(this.ll),a=this.icon.iconAnchor||[0,0];this.el.style.transform=`translate(${q.x-a[0]}px,${q.y-a[1]}px)`}
+  setLatLng(ll){this.ll=LL(ll);this._map&&this._map._dirty();return this}
+  getElement(){return this.el}
+  setZIndexOffset(z){this.zi=z;if(this.el)this.el.style.zIndex=z;return this}}
+function bounds(a){let n=-90,s=90,e=-180,w=180;a.map(x=>LL(x)).forEach(p=>{n=Math.max(n,p.lat);s=Math.min(s,p.lat);e=Math.max(e,p.lng);w=Math.min(w,p.lng)});return{nw:{lat:n,lng:w},se:{lat:s,lng:e}}}
+return{map:(id,o)=>new MapV(id,o),tileLayer:(u,o)=>new Tile(u,o),polyline:(a,o)=>new Poly(a,o),circle:(c,o)=>new Circle(c,o),
+  marker:(c,o)=>new Marker(c,o),divIcon:o=>o,latLng:(a,b)=>LL(a,b),latLngBounds:bounds};
+})();
+
+const $=s=>document.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const Cap=window.Capacitor&&window.Capacitor.Plugins||{};
+
+const S={pos:null,dest:null,route:null,coords:[],cum:[],total:0,steps:[],stepIdx:1,snapIdx:0,
+  nav:false,follow:true,profile:'car',muted:store.get('yol_mute',false),offCount:0,sim:null,rerouting:false,A:{},layers:[],wake:null,first:false};
+
+/* ---------- harita ---------- */
+const map=L.map('map',{zoomControl:false,tapHold:true}).setView([39.925,32.866],12);
+const TL={
+  dark:L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap © CARTO'}),
+  light:L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap © CARTO'})
+};
+let theme=store.get('yol_theme','dark');TL[theme].addTo(map);
+$('#fTheme').onclick=()=>{map.removeLayer(TL[theme]);theme=theme==='dark'?'light':'dark';TL[theme].addTo(map);store.set('yol_theme',theme)};
+
+const meIcon=L.divIcon({className:'meI',html:'<div class="me"><div class="arr hide"></div><div class="dot"></div></div>',iconSize:[34,34],iconAnchor:[17,17]});
+const me=L.marker([0,0],{icon:meIcon,interactive:false,zIndexOffset:1000});
+const accC=L.circle([0,0],{radius:1,color:'#3b82f6',weight:1,fillOpacity:.12,interactive:false});
+const pinIcon=L.divIcon({className:'pinI',html:'<div class="pin"></div>',iconSize:[30,30],iconAnchor:[4,30]});
+
+/* ---------- yardımcılar ---------- */
+const R=6371000,rad=d=>d*Math.PI/180;
+function hav(a,b){const dLa=rad(b[0]-a[0]),dLo=rad(b[1]-a[1]);const x=Math.sin(dLa/2)**2+Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.min(1,Math.sqrt(x)))}
+function bearing(a,b){const y=Math.sin(rad(b[1]-a[1]))*Math.cos(rad(b[0]));const x=Math.cos(rad(a[0]))*Math.sin(rad(b[0]))-Math.sin(rad(a[0]))*Math.cos(rad(b[0]))*Math.cos(rad(b[1]-a[1]));return(Math.atan2(y,x)*180/Math.PI+360)%360}
+function segProj(p,a,b){const mx=111320*Math.cos(rad(p[0])),my=110540;
+  const ax=(a[1]-p[1])*mx,ay=(a[0]-p[0])*my,bx=(b[1]-p[1])*mx,by=(b[0]-p[0])*my,dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy;
+  let t=L2?-(ax*dx+ay*dy)/L2:0;t=Math.max(0,Math.min(1,t));return{d:Math.hypot(ax+t*dx,ay+t*dy),t}}
+const fmtD=m=>m<1000?`${Math.round(m/10)*10} m`:`${(m/1000).toFixed(m<10000?1:0).replace('.',',')} km`;
+const fmtT=s=>{const m=Math.round(s/60);return m<60?`${Math.max(1,m)} dk`:`${Math.floor(m/60)} sa ${m%60} dk`};
+const fmtEta=s=>'Varış '+new Date(Date.now()+s*1000).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+const sayD=m=>m<1000?`${Math.max(50,Math.round(m/50)*50)} metre`:`${(Math.round(m/100)/10).toString().replace('.',',')} kilometre`;
+const up=s=>s?s.charAt(0).toLocaleUpperCase('tr')+s.slice(1):s;
+const low=s=>s?s.charAt(0).toLocaleLowerCase('tr')+s.slice(1):s;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let tT;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>e.classList.remove('on'),2600)}
+const loading=v=>$('#load').classList.toggle('hide',!v);
+function setSheetH(){requestAnimationFrame(()=>{const s=$('#sheet');document.documentElement.style.setProperty('--sh',(s.classList.contains('hide')?24:s.offsetHeight+8)+'px')})}
+
+/* ---------- ses ---------- */
+let trVoice=null;
+function loadV(){try{const vs=speechSynthesis.getVoices();trVoice=vs.find(v=>/^tr/i.test(v.lang))||null}catch(e){}}
+if('speechSynthesis'in window){loadV();speechSynthesis.onvoiceschanged=loadV}
+function say(t){
+  if(S.muted)return;
+  if(Cap.TextToSpeech){Cap.TextToSpeech.stop().catch(()=>{});Cap.TextToSpeech.speak({text:t,lang:'tr-TR',rate:1,category:'playback'}).catch(()=>{});return}
+  if(!('speechSynthesis'in window))return;
+  speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';if(trVoice)u.voice=trVoice;speechSynthesis.speak(u);
+}
+const setMuteIc=()=>$('#fMute').textContent=S.muted?'🔇':'🔊';setMuteIc();
+$('#fMute').onclick=()=>{S.muted=!S.muted;store.set('yol_mute',S.muted);setMuteIc();if(S.muted&&'speechSynthesis'in window)speechSynthesis.cancel()};
+
+/* ---------- ekran açık kalsın ---------- */
+async function wakeOn(){try{if(Cap.KeepAwake){await Cap.KeepAwake.keepAwake();return}if(navigator.wakeLock)S.wake=await navigator.wakeLock.request('screen')}catch(e){}}
+function wakeOff(){try{if(Cap.KeepAwake)Cap.KeepAwake.allowSleep();if(S.wake){S.wake.release();S.wake=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.nav)wakeOn()});
+
+/* ---------- konum ---------- */
+function update(f){
+  const prev=S.pos;let h=f.heading;
+  if(h==null||isNaN(h)){h=prev?prev.heading:0;if(prev&&hav([prev.lat,prev.lng],[f.lat,f.lng])>3)h=bearing([prev.lat,prev.lng],[f.lat,f.lng])}
+  S.pos={lat:f.lat,lng:f.lng,heading:h,speed:f.speed||0,acc:f.acc||0};
+  const ll=[f.lat,f.lng];me.setLatLng(ll);accC.setLatLng(ll).setRadius(Math.max(3,S.pos.acc));
+  if(!map.hasLayer(me)){accC.addTo(map);me.addTo(map)}
+  const el=me.getElement();
+  if(el){const moving=S.pos.speed>0.7||S.nav;el.querySelector('.arr').classList.toggle('hide',!moving);el.querySelector('.dot').classList.toggle('hide',moving);el.querySelector('.arr').style.transform=`rotate(${h}deg)`}
+  if(!S.first){S.first=true;if(!S.dest)map.setView(ll,16)}
+  if(S.nav){$('#spd').textContent=Math.round(S.pos.speed*3.6);navTick()}
+  if(S.follow&&(S.nav||!S.route))followView();
+}
+if(navigator.geolocation){
+  navigator.geolocation.watchPosition(p=>{if(S.sim)return;update({lat:p.coords.latitude,lng:p.coords.longitude,heading:p.coords.heading,speed:p.coords.speed,acc:p.coords.accuracy})},
+    e=>toast('Konum alınamadı: konum iznini ve GPS\'i açın'),{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+}else toast('Bu cihazda konum desteklenmiyor');
+
+function followView(){
+  if(!S.pos)return;const ll=L.latLng(S.pos.lat,S.pos.lng);
+  if(S.nav){const z=17,p=map.project(ll,z).subtract([0,map.getSize().y*0.18]);map.setView(map.unproject(p,z),z,{animate:true,duration:.5})}
+  else map.setView(ll,Math.max(map.getZoom(),15));
+}
+map.on('dragstart',()=>{S.follow=false;$('#fLoc').classList.add('off')});
+$('#fLoc').onclick=()=>{if(!S.pos){toast('Konum bekleniyor…');return}S.follow=true;$('#fLoc').classList.remove('off');followView()};
+
+/* ---------- arama ---------- */
+let qT,qAbort;
+$('#q').addEventListener('input',e=>{const v=e.target.value.trim();$('#qx').classList.toggle('hide',!v);clearTimeout(qT);if(v.length<3){showRecent();return}qT=setTimeout(()=>geocode(v),450)});
+$('#q').addEventListener('focus',()=>{if(!$('#q').value.trim())showRecent()});
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qT);const v=e.target.value.trim();if(v)geocode(v)}});
+$('#qx').onclick=()=>{$('#q').value='';$('#qx').classList.add('hide');showRecent();$('#q').focus()};
+map.on('click',()=>{hideRes();$('#q').blur()});
+const hideRes=()=>$('#res').classList.add('hide');
+
+async function geocode(q){
+  try{qAbort&&qAbort.abort()}catch(e){}qAbort=new AbortController();
+  const c=S.pos||map.getCenter(),lat=c.lat,lng=c.lng;
+  const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=tr&accept-language=tr&addressdetails=0&limit=8&viewbox=${lng-1.5},${lat+1.5},${lng+1.5},${lat-1.5}&q=${encodeURIComponent(q)}`;
+  try{const r=await fetch(url,{signal:qAbort.signal});const j=await r.json();
+    renderRes(j.map(x=>{const parts=x.display_name.split(', ');return{name:x.name||parts[0],sub:parts.slice(1,4).join(', '),lat:+x.lat,lng:+x.lon}}),false)}
+  catch(e){if(e.name!=='AbortError')toast('Arama yapılamadı, internet bağlantısını kontrol edin')}
+}
+function renderRes(list,recent){
+  const el=$('#res');
+  if(!list.length){el.innerHTML=recent?'':'<div class="ri mut">Sonuç bulunamadı</div>';el.classList.toggle('hide',recent);return}
+  el.innerHTML=(recent?'<div class="rh">Son gidilenler</div>':'')+list.map((r,i)=>{
+    const d=S.pos?fmtD(hav([S.pos.lat,S.pos.lng],[r.lat,r.lng])):'';
+    return`<div class="ri" data-i="${i}"><span>${recent?'🕘':'📍'}</span><div class="tx"><div class="rn">${esc(r.name)}</div><div class="rs">${esc(r.sub||'')}</div></div><div class="rd">${d}</div></div>`}).join('');
+  el.classList.remove('hide');
+  el.querySelectorAll('.ri[data-i]').forEach(d=>d.onclick=()=>{const r=list[+d.dataset.i];$('#q').blur();setDest(r)});
+}
+const showRecent=()=>renderRes(store.get('yol_recent',[]),true);
+function addRecent(r){let a=store.get('yol_recent',[]).filter(x=>!(Math.abs(x.lat-r.lat)<1e-5&&Math.abs(x.lng-r.lng)<1e-5));a.unshift({name:r.name,sub:r.sub||'',lat:r.lat,lng:r.lng});store.set('yol_recent',a.slice(0,8))}
+
+map.on('contextmenu',async e=>{
+  if(S.nav)return;loading(true);let name='Seçilen konum',sub='';
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=tr&zoom=18&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);const j=await r.json();
+    if(j.display_name){const p=j.display_name.split(', ');name=j.name||p.slice(0,2).join(', ');sub=p.slice(2,5).join(', ')}}catch(_){}
+  loading(false);setDest({name,sub,lat:e.latlng.lat,lng:e.latlng.lng});
+});
+
+/* ---------- rota ---------- */
+const PROF={car:'routed-car',bike:'routed-bike',foot:'routed-foot'};
+async function getRoute(a,b){
+  const q=`${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson&steps=true`;
+  const urls=[`https://routing.openstreetmap.de/${PROF[S.profile]}/route/v1/driving/${q}`];
+  if(S.profile==='car')urls.push(`https://router.project-osrm.org/route/v1/driving/${q}`);
+  for(const u of urls){try{const r=await fetch(u);const j=await r.json();if(j.code==='Ok'&&j.routes&&j.routes.length)return j.routes[0]}catch(e){}}
+  throw new Error('rota yok');
+}
+function prepareRoute(rt){
+  S.route=rt;S.coords=rt.geometry.coordinates.map(c=>[c[1],c[0]]);
+  S.cum=[0];for(let i=1;i<S.coords.length;i++)S.cum[i]=S.cum[i-1]+hav(S.coords[i-1],S.coords[i]);
+  S.total=S.cum[S.cum.length-1]||0;S.steps=[];let from=0;
+  for(const lg of rt.legs)for(const st of lg.steps){
+    const loc=[st.maneuver.location[1],st.maneuver.location[0]];let best=from,bd=1e9;
+    for(let i=from;i<Math.min(S.coords.length,from+4000);i++){const d=hav(loc,S.coords[i]);if(d<bd){bd=d;best=i}if(bd<1)break}
+    st.idx=best;from=best;S.steps.push(st);
+  }
+  S.stepIdx=Math.min(1,S.steps.length-1);S.snapIdx=0;S.A={};S.offCount=0;drawRoute();
+}
+function clearRoute(){S.layers.forEach(l=>map.removeLayer(l));S.layers=[];S.casing=S.line=null}
+function drawRoute(){
+  clearRoute();
+  S.casing=L.polyline(S.coords,{color:'#1e3a8a',weight:12,opacity:.95,interactive:false}).addTo(map);
+  S.line=L.polyline(S.coords,{color:'#3b82f6',weight:7,interactive:false}).addTo(map);
+  S.layers.push(S.casing,S.line,L.marker([S.dest.lat,S.dest.lng],{icon:pinIcon,interactive:false}).addTo(map));
+  me.bringToFront&&me.setZIndexOffset(1000);
+}
+async function setDest(r){
+  hideRes();S.dest={lat:r.lat,lng:r.lng};S.destInfo=r;$('#q').value=r.name;$('#qx').classList.remove('hide');addRecent(r);await plan(true);
+}
+async function plan(fit){
+  let from=S.pos;
+  if(!from){const c=map.getCenter();from={lat:c.lat,lng:c.lng};toast('GPS yok — başlangıç harita merkezi')}
+  loading(true);
+  try{const rt=await getRoute(from,S.dest);prepareRoute(rt);
+    if(fit){S.follow=false;map.fitBounds(L.latLngBounds(S.coords.concat([[from.lat,from.lng]])),{paddingTopLeft:[30,90],paddingBottomRight:[30,280]})}
+    showPreview();
+  }catch(e){toast('Rota bulunamadı');}
+  loading(false);
+}
+function showPreview(){
+  $('#dName').textContent=S.destInfo.name;$('#dSub').textContent=S.destInfo.sub||'';
+  $('#pvTime').textContent=fmtT(S.route.duration);$('#pvDist').textContent=fmtD(S.route.distance);$('#pvEta').textContent=fmtEta(S.route.duration);
+  $('#sheet').classList.remove('hide');$('#pv').classList.remove('hide');$('#nv').classList.add('hide');setSheetH();
+}
+document.querySelectorAll('.prof button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.prof button').forEach(x=>x.classList.toggle('on',x===b));S.profile=b.dataset.p;if(S.dest)plan(true)});
+$('#bX').onclick=()=>{clearRoute();S.route=null;S.dest=null;$('#sheet').classList.add('hide');$('#q').value='';$('#qx').classList.add('hide');setSheetH()};
+$('#bGo').onclick=()=>startNav(false);
+$('#bSim').onclick=()=>startNav(true);
+$('#bEnd').onclick=()=>endNav(false);
+
+/* ---------- Türkçe talimatlar ---------- */
+const MD={left:'sola',right:'sağa','slight left':'hafif sola','slight right':'hafif sağa','sharp left':'keskin sola','sharp right':'keskin sağa',straight:'düz',uturn:'geri'};
+const SD={left:'soldaki',right:'sağdaki','slight left':'soldaki','slight right':'sağdaki','sharp left':'soldaki','sharp right':'sağdaki'};
+const SL={left:'solda',right:'sağda','slight left':'solda','slight right':'sağda','sharp left':'solda','sharp right':'sağda'};
+const IC={left:'⬅',right:'➡','slight left':'⬉','slight right':'⬈','sharp left':'⬋','sharp right':'⬊',straight:'⬆',uturn:'↩'};
+function instr(st){
+  const m=st.maneuver,t=m.type,mo=m.modifier||'straight',road=st.name||st.ref||'';let x,ic=IC[mo]||'⬆';
+  const turn=()=>mo==='uturn'?'U dönüşü yapın':mo==='straight'?'Düz devam edin':up(MD[mo])+' dönün';
+  switch(t){
+    case'depart':x='Yola çıkın';ic='⬆';break;
+    case'arrive':x=SL[mo]?`Varış noktası ${SL[mo]}`:'Varış noktasına ulaştınız';ic='⚑';break;
+    case'roundabout':case'rotary':x=`Döner kavşakta ${m.exit||1}. çıkıştan çıkın`;ic='⟲';break;
+    case'roundabout turn':x=mo==='straight'?'Döner kavşaktan düz geçin':`Döner kavşakta ${MD[mo]} dönün`;ic='⟲';break;
+    case'exit roundabout':case'exit rotary':x='Döner kavşaktan çıkın';break;
+    case'merge':x=SD[mo]?up(SD[mo])+' yola katılın':'Yola katılın';break;
+    case'on ramp':x=SD[mo]?up(SD[mo])+' bağlantı yoluna girin':'Bağlantı yoluna girin';break;
+    case'off ramp':x=SD[mo]?up(SD[mo])+' çıkışı kullanın':'Çıkışı kullanın';break;
+    case'fork':x=SL[mo]?`Yol ayrımında ${SL[mo]} kalın`:'Yol ayrımında düz devam edin';break;
+    case'end of road':x=`Yolun sonunda ${MD[mo]||'sağa'} dönün`;break;
+    case'continue':case'new name':case'notification':x=mo==='straight'?'Düz devam edin':mo==='uturn'?'U dönüşü yapın':up(MD[mo])+' devam edin';break;
+    default:x=turn();
+  }
+  return{text:x,road,ic,say:x+(road&&t!=='arrive'?', '+road:'')};
+}
+
+/* ---------- navigasyon ---------- */
+async function startNav(sim){
+  if(!S.route)return;
+  if(!sim&&!S.pos){toast('GPS konumu bekleniyor…');return}
+  if(!sim&&hav([S.pos.lat,S.pos.lng],S.coords[0])>60){await plan(false);if(!S.route)return}
+  S.nav=true;S.follow=true;S.A={};$('#fLoc').classList.remove('off');
+  $('#top').classList.add('hide');$('#pv').classList.add('hide');$('#nv').classList.remove('hide');
+  $('#banner').classList.remove('hide');$('#speed').classList.remove('hide');setSheetH();
+  wakeOn();say('Navigasyon başladı');
+  if(sim)startSim();else{navTick();followView()}
+}
+function endNav(arrived){
+  S.nav=false;if(S.sim){clearInterval(S.sim);S.sim=null}wakeOff();
+  clearRoute();S.route=null;S.dest=null;
+  ['#banner','#bNext','#speed','#sheet'].forEach(s=>$(s).classList.add('hide'));
+  $('#top').classList.remove('hide');$('#q').value='';$('#qx').classList.add('hide');setSheetH();
+  if(arrived)toast('Varış noktasına ulaştınız 🏁');
+  if(S.pos)map.setView([S.pos.lat,S.pos.lng],16);
+}
+function navTick(){
+  if(!S.route||!S.pos||S.coords.length<2)return;
+  const p=[S.pos.lat,S.pos.lng],c=S.coords;let bi=S.snapIdx,bd=1e9,bt=0;
+  const lo=Math.max(0,S.snapIdx-5),hi=Math.min(c.length-1,S.snapIdx+250);
+  for(let i=lo;i<hi;i++){const r=segProj(p,c[i],c[i+1]);if(r.d<bd){bd=r.d;bi=i;bt=r.t}}
+  if(bd>45&&S.pos.acc<60){if(++S.offCount>=3&&!S.rerouting){reroute();return}}else S.offCount=0;
+  S.snapIdx=bi;
+  const along=S.cum[bi]+bt*(S.cum[bi+1]-S.cum[bi]);
+  const sp=[c[bi][0]+(c[bi+1][0]-c[bi][0])*bt,c[bi][1]+(c[bi+1][1]-c[bi][1])*bt];
+  const restLL=[sp].concat(c.slice(bi+1));S.line.setLatLngs(restLL);S.casing.setLatLngs(restLL);
+  while(S.stepIdx<S.steps.length-1&&along>S.cum[S.steps[S.stepIdx].idx]+8)S.stepIdx++;
+  const k=S.stepIdx,st=S.steps[k],dist=Math.max(0,S.cum[st.idx]-along),ins=instr(st),rem=Math.max(0,S.total-along);
+  // bant
+  $('#bIcon').textContent=ins.ic;$('#bDist').textContent=dist<25?'Şimdi':fmtD(dist);$('#bText').textContent=ins.text;$('#bRoad').textContent=ins.road;
+  const nx=S.steps[k+1];
+  if(nx&&dist<400&&S.cum[nx.idx]-S.cum[st.idx]<250){const ni=instr(nx);$('#bNext').textContent='Sonra '+ni.ic+' '+low(ni.text);$('#bNext').classList.remove('hide')}else $('#bNext').classList.add('hide');
+  // özet
+  const remT=S.route.distance?S.route.duration*rem/S.route.distance:0;
+  $('#nvTime').textContent=fmtT(remT);$('#nvDist').textContent=fmtD(rem);$('#nvEta').textContent=fmtEta(remT);
+  // varış
+  if(rem<20){say('Varış noktasına ulaştınız');endNav(true);return}
+  // sesli
+  const A=S.A,car=S.profile==='car',far=car?(S.pos.speed>22?1000:500):150,near=car?150:40;
+  if(dist<=30){if(!A[k+'w']){A[k+'w']=A[k+'n']=A[k+'f']=1;say(st.maneuver.type==='arrive'?ins.say:'Şimdi '+low(ins.say))}}
+  else if(dist<=near){if(!A[k+'n']){A[k+'n']=A[k+'f']=1;say(`${sayD(dist)} sonra ${low(ins.say)}`)}}
+  else if(dist<=far&&dist>far*0.55){if(!A[k+'f']){A[k+'f']=1;say(`${sayD(dist)} sonra ${low(ins.say)}`)}}
+  else if(!A.start){A.start=1;say(`${sayD(dist)} boyunca devam edin`)}
+}
+async function reroute(){
+  S.rerouting=true;toast('Rota yeniden hesaplanıyor…');say('Rota yeniden hesaplanıyor');
+  try{const rt=await getRoute(S.pos,S.dest);prepareRoute(rt);S.A.start=1}catch(e){toast('Yeni rota alınamadı')}
+  S.rerouting=false;S.offCount=0;
+}
+
+/* ---------- simülasyon (GPS olmadan test) ---------- */
+function pointAt(a){const c=S.coords,cm=S.cum;let lo=0,hi=cm.length-1;while(lo<hi-1){const m=(lo+hi)>>1;if(cm[m]<=a)lo=m;else hi=m}
+  const L2=cm[hi]-cm[lo],t=L2?(a-cm[lo])/L2:0;return{lat:c[lo][0]+(c[hi][0]-c[lo][0])*t,lng:c[lo][1]+(c[hi][1]-c[lo][1])*t,heading:bearing(c[lo],c[hi])}}
+function startSim(){
+  const v={car:18,bike:6,foot:1.8}[S.profile];let a=0;
+  const tick=()=>{if(!S.nav)return;a=Math.min(S.total,a+v*0.5);const pt=pointAt(a);update({lat:pt.lat,lng:pt.lng,heading:pt.heading,speed:v,acc:5})};
+  tick();S.sim=setInterval(tick,500);
+}
+
+setSheetH();
+if(window.Capacitor&&Cap.Geolocation&&Cap.Geolocation.requestPermissions)Cap.Geolocation.requestPermissions().catch(()=>{});
+</script>
+</body>
+</html>
