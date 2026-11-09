@@ -9,7 +9,9 @@
 :root{--bg:#0b1220;--panel:#121a2b;--panel2:#1c2742;--txt:#e8eefc;--mut:#8a97b5;--acc:#e30a17;--go:#16a34a;--route:#3b82f6;--sh:24px}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Roboto,sans-serif;overflow:hidden;user-select:none}
-#map{position:fixed;inset:0;background:#1a1f2b}
+#map{position:fixed;inset:0;background:#e8e4dc}
+#map.dark{background:#1a1f2b}
+#map.dark .tp{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.7)}
 .hide{display:none!important}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 /* arama */
@@ -137,7 +139,7 @@ class MapV extends Evt{
   constructor(id){super();this.el=document.getElementById(id);this.c={lat:0,lng:0};this.z=3;this.minZ=3;this.maxZ=19;this.layers=[];this.tiles={};
     Object.assign(this.el.style,{overflow:'hidden',touchAction:'none'});
     const mk=css=>{const d=document.createElement('div');d.style.cssText=css;return d};
-    this.tp=mk('position:absolute;inset:0;pointer-events:none');
+    this.tp=mk('position:absolute;inset:0;pointer-events:none');this.tp.className='tp';
     this.cv=document.createElement('canvas');this.cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
     this.mp=mk('position:absolute;inset:0;pointer-events:none');
     this.at=document.createElement('div');this.at.className='attr';
@@ -262,12 +264,10 @@ const S={pos:null,dest:null,route:null,coords:[],cum:[],total:0,steps:[],stepIdx
 
 /* ---------- harita ---------- */
 const map=L.map('map',{zoomControl:false,tapHold:true}).setView([39.925,32.866],12);
-const TL={
-  dark:L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap © CARTO'}),
-  light:L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap © CARTO'})
-};
-let theme=store.get('yol_theme','dark');TL[theme].addTo(map);
-$('#fTheme').onclick=()=>{map.removeLayer(TL[theme]);theme=theme==='dark'?'light':'dark';TL[theme].addTo(map);store.set('yol_theme',theme)};
+const TILE=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'© Esri, HERE, Garmin, © OpenStreetMap'}).addTo(map);
+let theme=store.get('yol_theme','dark');
+const applyTheme=()=>$('#map').classList.toggle('dark',theme==='dark');applyTheme();
+$('#fTheme').onclick=()=>{theme=theme==='dark'?'light':'dark';applyTheme();store.set('yol_theme',theme)};
 
 const meIcon=L.divIcon({className:'meI',html:'<div class="me"><div class="arr hide"></div><div class="dot"></div></div>',iconSize:[34,34],iconAnchor:[17,17]});
 const me=L.marker([0,0],{icon:meIcon,interactive:false,zIndexOffset:1000});
