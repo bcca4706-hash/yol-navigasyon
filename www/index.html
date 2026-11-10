@@ -11,7 +11,26 @@
 html,body{height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Roboto,sans-serif;overflow:hidden;user-select:none}
 #map{position:fixed;inset:0;background:#e8e4dc}
 #map.dark{background:#1a1f2b}
-#map.dark .tp{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.7)}
+#map.dark .tp{filter:invert(1) hue-rotate(180deg) brightness(.95) contrast(.9) saturate(.6)}
+#chips{display:flex;gap:8px;overflow-x:auto;margin-top:8px;padding-bottom:4px;scrollbar-width:none}
+#chips::-webkit-scrollbar{display:none}
+#chips button{flex-shrink:0;background:var(--panel);padding:8px 14px;border-radius:20px;font-size:14px;box-shadow:0 3px 10px #0006}
+#lmenu{position:fixed;right:72px;bottom:calc(var(--sh) + 16px);z-index:1002;background:var(--panel);border-radius:16px;padding:6px;box-shadow:0 6px 24px #0009;display:flex;flex-direction:column;min-width:150px}
+#lmenu button{text-align:left;padding:11px 12px;border-radius:10px;font-size:15px}
+#lmenu button.on{background:var(--route);font-weight:700}
+#lmenu .sep{height:1px;background:#ffffff1a;margin:4px 6px}
+.poiI{background:none}
+.poi{width:30px;height:30px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px #0008;border:2px solid #fff}
+.poi.sel{transform:scale(1.35);border-color:var(--acc)}
+#poi{position:fixed;left:0;right:0;bottom:0;z-index:1003;background:var(--panel);border-radius:22px 22px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);box-shadow:0 -8px 30px #0009}
+#poi .ph{display:flex;align-items:center;gap:12px}
+#pIc{width:48px;height:48px;border-radius:14px;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+#poi .tx{flex:1;min-width:0}
+#pX{width:40px;height:40px;font-size:18px;color:var(--mut)}
+#pInfo{margin:12px 0;font-size:14px;line-height:1.6;color:#cfd8ee}
+#pInfo div{display:flex;gap:8px}
+#pInfo a{color:#7cb1ff;text-decoration:none;word-break:break-all}
+#pCall{flex:1}
 .hide{display:none!important}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 /* arama */
@@ -85,6 +104,10 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 
 <div id="top">
   <div class="sbox"><span class="ic">⌕</span><input id="q" placeholder="Nereye gidiyoruz?" autocomplete="off" enterkeyhint="search"><button id="qx" class="hide">✕</button></div>
+  <div id="chips">
+    <button data-c="eczane">💊 Eczane</button><button data-c="benzin">⛽ Benzinlik</button><button data-c="market">🛒 Market</button><button data-c="atm">🏧 ATM</button>
+    <button data-c="hastane">🏥 Hastane</button><button data-c="otopark">🅿️ Otopark</button><button data-c="restoran">🍽️ Restoran</button><button data-c="kafe">☕ Kafe</button><button data-c="cami">🕌 Cami</button>
+  </div>
   <div id="res" class="hide"></div>
 </div>
 
@@ -95,9 +118,18 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 <div id="bNext" class="hide"></div>
 
 <div id="fabs">
-  <button id="fTheme" title="Tema">◐</button>
+  <button id="fLayer" title="Harita türü">🗺️</button>
   <button id="fMute" title="Ses">🔊</button>
   <button id="fLoc" title="Konumum">◎</button>
+</div>
+<div id="lmenu" class="hide">
+  <button data-m="street">🗺️ Sokak</button><button data-m="sat">🛰️ Uydu</button><button data-m="hyb">🛰️ Hibrit</button><button data-m="night">🌙 Gece</button>
+  <div class="sep"></div><button id="lPoi">📍 Mekanlar</button>
+</div>
+<div id="poi" class="hide">
+  <div class="ph"><div id="pIc"></div><div class="tx"><div id="pName" class="dname"></div><div id="pType" class="dsub"></div></div><button id="pX">✕</button></div>
+  <div id="pInfo"></div>
+  <div class="acts"><button id="pGo" class="pri">➤ Yol tarifi</button><button id="pCall">📞 Ara</button></div>
 </div>
 <div id="speed" class="hide"><b id="spd">0</b><small>km/sa</small></div>
 
@@ -136,7 +168,7 @@ function unproj(p,z){const s=TS*Math.pow(2,z),n=Math.PI-2*Math.PI*p.y/s;return{l
 class Evt{on(t,f){(this._h=this._h||{})[t]=(this._h[t]||[]).concat(f);return this}fire(t,e){((this._h&&this._h[t])||[]).forEach(f=>f(e||{}))}}
 
 class MapV extends Evt{
-  constructor(id){super();this.el=document.getElementById(id);this.c={lat:0,lng:0};this.z=3;this.minZ=3;this.maxZ=19;this.layers=[];this.tiles={};
+  constructor(id){super();this.el=document.getElementById(id);this.c={lat:0,lng:0};this.z=3;this.minZ=3;this.maxZ=20;this.layers=[];this.tiles={};
     Object.assign(this.el.style,{overflow:'hidden',touchAction:'none'});
     const mk=css=>{const d=document.createElement('div');d.style.cssText=css;return d};
     this.tp=mk('position:absolute;inset:0;pointer-events:none');this.tp.className='tp';
@@ -148,6 +180,7 @@ class MapV extends Evt{
   getSize(){return new P(this.el.clientWidth,this.el.clientHeight)}
   getCenter(){return{lat:this.c.lat,lng:this.c.lng}}
   getZoom(){return this.z}
+  getBounds(){const sz=this.getSize(),a=this._ll(0,0),b=this._ll(sz.x,sz.y);return{n:a.lat,w:a.lng,s:b.lat,e:b.lng}}
   project(ll,z){return proj(LL(ll),z==null?this.z:z)}
   unproject(p,z){return unproj(p,z==null?this.z:z)}
   _cz(z){return Math.max(this.minZ,Math.min(this.maxZ,z))}
@@ -171,25 +204,26 @@ class MapV extends Evt{
   _zoomAround(ll,m,z){const sz=this.getSize(),p=proj(ll,z);this.z=z;this.c=unproj(new P(p.x-(m.x-sz.x/2),p.y-(m.y-sz.y/2)),z);this._dirty()}
   _render(){
     const sz=this.getSize();if(!sz.x||!sz.y)return;
-    const tl=this.layers.find(l=>l._tile),keep={};
-    if(tl){const tz=Math.max(0,Math.min(tl.maxZ,Math.round(this.z))),sc=Math.pow(2,this.z-tz),c=proj(this.c,tz),n=Math.pow(2,tz);
+    const tls=this.layers.filter(l=>l._tile),keep={};
+    tls.forEach((tl,li)=>{const tz=Math.max(0,Math.min(tl.maxZ,Math.round(this.z))),sc=Math.pow(2,this.z-tz),c=proj(this.c,tz),n=Math.pow(2,tz);
       const x0=Math.floor((c.x-sz.x/2/sc)/TS),x1=Math.floor((c.x+sz.x/2/sc)/TS),y0=Math.max(0,Math.floor((c.y-sz.y/2/sc)/TS)),y1=Math.min(n-1,Math.floor((c.y+sz.y/2/sc)/TS));
       for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){
         const wx=((x%n)+n)%n,k=tl.id+'/'+tz+'/'+x+'/'+y;keep[k]=1;let im=this.tiles[k];
         if(!im){im=new Image();im.draggable=false;im.alt='';
-          im.style.cssText='position:absolute;left:0;top:0;width:256px;height:256px;transform-origin:0 0;opacity:0;transition:opacity .2s;pointer-events:none';
+          im.style.cssText=`position:absolute;left:0;top:0;width:256px;height:256px;transform-origin:0 0;opacity:0;transition:opacity .2s;pointer-events:none;z-index:${li}`;
           im.onload=()=>im.style.opacity=1;
-          im.onerror=()=>{if(!im._fb){im._fb=1;im.src=`https://tile.openstreetmap.org/${tz}/${wx}/${y}.png`}};
+          im.onerror=()=>{if(!im._fb&&tl.o.fallback){im._fb=1;im.src=tl.url(tz,wx,y,tl.o.fallback)}};
           im.src=tl.url(tz,wx,y);this.tiles[k]=im;this.tp.appendChild(im)}
         im.style.transform=`translate(${(x*TS-c.x)*sc+sz.x/2}px,${(y*TS-c.y)*sc+sz.y/2}px) scale(${sc*1.004})`}
-    }
+    });
     for(const k in this.tiles)if(!keep[k]){this.tiles[k].remove();delete this.tiles[k]}
     const d=devicePixelRatio||1,cv=this.cv,W=Math.round(sz.x*d),H=Math.round(sz.y*d);
     if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
     const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,sz.x,sz.y);
     for(const l of this.layers)l._draw&&l._draw(g,this);
     for(const l of this.layers)l._pos&&l._pos(this);
-    this.at.textContent=tl?tl.attr:'';
+    this.at.textContent=tls.map(t=>t.attr).filter(Boolean).join(' · ');
+    clearTimeout(this._me);this._me=setTimeout(()=>this.fire('moveend'),450);
   }
   _ev(){
     const el=this.el,pts=new PMap();let drag=null,pinch=null,lp=0,moved=false,t0=0,lastTap=0,lpFired=false;
@@ -226,7 +260,7 @@ class MapV extends Evt{
 }
 let tid=0;
 class Tile{constructor(u,o){this._tile=1;this.id='t'+(tid++);this.u=u;this.o=o||{};this.maxZ=Math.min(this.o.maxZoom||19,19);this.attr=this.o.attribution||''}
-  url(z,x,y){const s=this.o.subdomains||'abc';return this.u.replace('{s}',s[(x+y)%s.length]).replace('{z}',z).replace('{x}',x).replace('{y}',y).replace('{r}',(devicePixelRatio||1)>1?'@2x':'')}
+  url(z,x,y,u){const s=this.o.subdomains||'abc';return (u||this.u).replace('{s}',s[(x+y)%s.length]).replace('{z}',z).replace('{x}',x).replace('{y}',y).replace('{r}',(devicePixelRatio||1)>1?'@2x':'')}
   addTo(m){m.addLayer(this);return this}}
 class Poly{constructor(a,o){this.o=o||{};this.setLatLngs(a)}
   addTo(m){m.addLayer(this);return this}
@@ -244,7 +278,9 @@ class Circle{constructor(ll,o){this.c=LL(ll);this.o=o||{};this.r=this.o.radius||
 class Marker{constructor(ll,o){this.ll=LL(ll);this.o=o||{};this.icon=this.o.icon||{};this.zi=this.o.zIndexOffset||0}
   addTo(m){m.addLayer(this);return this}
   _add(m){const i=this.icon,s=i.iconSize||[20,20];this.el=document.createElement('div');this.el.className=i.className||'';this.el.innerHTML=i.html||'';
-    this.el.style.cssText=`position:absolute;left:0;top:0;width:${s[0]}px;height:${s[1]}px;z-index:${this.zi}`;m.mp.appendChild(this.el)}
+    this.el.style.cssText=`position:absolute;left:0;top:0;width:${s[0]}px;height:${s[1]}px;z-index:${this.zi}`;
+    if(this.o.onClick){this.el.style.pointerEvents='auto';this.el.addEventListener('click',e=>{e.stopPropagation();this.o.onClick()})}
+    m.mp.appendChild(this.el)}
   _rm(){this.el&&this.el.remove()}
   _pos(m){const q=m._px(this.ll),a=this.icon.iconAnchor||[0,0];this.el.style.transform=`translate(${q.x-a[0]}px,${q.y-a[1]}px)`}
   setLatLng(ll){this.ll=LL(ll);this._map&&this._map._dirty();return this}
@@ -264,10 +300,21 @@ const S={pos:null,dest:null,route:null,coords:[],cum:[],total:0,steps:[],stepIdx
 
 /* ---------- harita ---------- */
 const map=L.map('map',{zoomControl:false,tapHold:true}).setView([39.925,32.866],12);
-const TILE=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'© Esri, HERE, Garmin, © OpenStreetMap'}).addTo(map);
-let theme=store.get('yol_theme','dark');
-const applyTheme=()=>$('#map').classList.toggle('dark',theme==='dark');applyTheme();
-$('#fTheme').onclick=()=>{theme=theme==='dark'?'light':'dark';applyTheme();store.set('yol_theme',theme)};
+const ESRI='https://server.arcgisonline.com/ArcGIS/rest/services/';
+const T={
+  osm:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap',fallback:'https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png'}),
+  sat:L.tileLayer(ESRI+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'© Esri, Maxar'}),
+  road:L.tileLayer(ESRI+'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),
+  place:L.tileLayer(ESRI+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19})
+};
+const MODES={street:{l:['osm']},sat:{l:['sat']},hyb:{l:['sat','road','place']},night:{l:['osm'],dark:1}};
+let mode=store.get('yol_mode','street');if(!MODES[mode])mode='street';
+function applyMode(){Object.values(T).forEach(t=>map.removeLayer(t));MODES[mode].l.forEach(k=>T[k].addTo(map));
+  $('#map').classList.toggle('dark',!!MODES[mode].dark);
+  document.querySelectorAll('#lmenu [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===mode))}
+document.querySelectorAll('#lmenu [data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;store.set('yol_mode',mode);applyMode();$('#lmenu').classList.add('hide')});
+$('#fLayer').onclick=e=>{e.stopPropagation();$('#lmenu').classList.toggle('hide')};
+applyMode();
 
 const meIcon=L.divIcon({className:'meI',html:'<div class="me"><div class="arr hide"></div><div class="dot"></div></div>',iconSize:[34,34],iconAnchor:[17,17]});
 const me=L.marker([0,0],{icon:meIcon,interactive:false,zIndexOffset:1000});
@@ -290,7 +337,7 @@ const low=s=>s?s.charAt(0).toLocaleLowerCase('tr')+s.slice(1):s;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let tT;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>e.classList.remove('on'),2600)}
 const loading=v=>$('#load').classList.toggle('hide',!v);
-function setSheetH(){requestAnimationFrame(()=>{const s=$('#sheet');document.documentElement.style.setProperty('--sh',(s.classList.contains('hide')?24:s.offsetHeight+8)+'px')})}
+function setSheetH(){requestAnimationFrame(()=>{const h=['#sheet','#poi'].map(q=>$(q)).filter(e=>!e.classList.contains('hide')).reduce((m,e)=>Math.max(m,e.offsetHeight+8),24);document.documentElement.style.setProperty('--sh',h+'px')})}
 
 /* ---------- ses ---------- */
 let trVoice=null;
@@ -342,8 +389,8 @@ $('#q').addEventListener('input',e=>{const v=e.target.value.trim();$('#qx').clas
 $('#q').addEventListener('focus',()=>{if(!$('#q').value.trim())showRecent()});
 $('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qT);const v=e.target.value.trim();if(v)geocode(v)}});
 $('#qx').onclick=()=>{$('#q').value='';$('#qx').classList.add('hide');showRecent();$('#q').focus()};
-map.on('click',()=>{hideRes();$('#q').blur()});
-const hideRes=()=>$('#res').classList.add('hide');
+map.on('click',()=>{hideRes();$('#q').blur();$('#lmenu').classList.add('hide');hidePoi()});
+const hideRes=()=>{$('#res').classList.add('hide');$('#chips').classList.remove('hide')};
 
 async function geocode(q){
   try{qAbort&&qAbort.abort()}catch(e){}qAbort=new AbortController();
@@ -353,14 +400,16 @@ async function geocode(q){
     renderRes(j.map(x=>{const parts=x.display_name.split(', ');return{name:x.name||parts[0],sub:parts.slice(1,4).join(', '),lat:+x.lat,lng:+x.lon}}),false)}
   catch(e){if(e.name!=='AbortError')toast('Arama yapılamadı, internet bağlantısını kontrol edin')}
 }
-function renderRes(list,recent){
+function renderRes(list,recent,head,pick){
   const el=$('#res');
-  if(!list.length){el.innerHTML=recent?'':'<div class="ri mut">Sonuç bulunamadı</div>';el.classList.toggle('hide',recent);return}
-  el.innerHTML=(recent?'<div class="rh">Son gidilenler</div>':'')+list.map((r,i)=>{
+  if(!list.length){el.innerHTML=recent?'':'<div class="ri mut">Sonuç bulunamadı</div>';el.classList.toggle('hide',recent);$('#chips').classList.toggle('hide',!recent);return}
+  const h=head||(recent?'Son gidilenler':'');
+  el.innerHTML=(h?`<div class="rh">${esc(h)}</div>`:'')+list.map((r,i)=>{
     const d=S.pos?fmtD(hav([S.pos.lat,S.pos.lng],[r.lat,r.lng])):'';
-    return`<div class="ri" data-i="${i}"><span>${recent?'🕘':'📍'}</span><div class="tx"><div class="rn">${esc(r.name)}</div><div class="rs">${esc(r.sub||'')}</div></div><div class="rd">${d}</div></div>`}).join('');
+    return`<div class="ri" data-i="${i}"><span>${r.ic||(recent?'🕘':'📍')}</span><div class="tx"><div class="rn">${esc(r.name)}</div><div class="rs">${esc(r.sub||'')}</div></div><div class="rd">${d}</div></div>`}).join('');
   el.classList.remove('hide');
-  el.querySelectorAll('.ri[data-i]').forEach(d=>d.onclick=()=>{const r=list[+d.dataset.i];$('#q').blur();setDest(r)});
+  el.querySelectorAll('.ri[data-i]').forEach(d=>d.onclick=()=>{const r=list[+d.dataset.i];$('#q').blur();(pick||setDest)(r)});
+  $('#chips').classList.add('hide');
 }
 const showRecent=()=>renderRes(store.get('yol_recent',[]),true);
 function addRecent(r){let a=store.get('yol_recent',[]).filter(x=>!(Math.abs(x.lat-r.lat)<1e-5&&Math.abs(x.lng-r.lng)<1e-5));a.unshift({name:r.name,sub:r.sub||'',lat:r.lat,lng:r.lng});store.set('yol_recent',a.slice(0,8))}
@@ -456,7 +505,7 @@ async function startNav(sim){
   if(!sim&&!S.pos){toast('GPS konumu bekleniyor…');return}
   if(!sim&&hav([S.pos.lat,S.pos.lng],S.coords[0])>60){await plan(false);if(!S.route)return}
   S.nav=true;S.follow=true;S.A={};$('#fLoc').classList.remove('off');
-  $('#top').classList.add('hide');$('#pv').classList.add('hide');$('#nv').classList.remove('hide');
+  hidePoi();$('#top').classList.add('hide');$('#pv').classList.add('hide');$('#nv').classList.remove('hide');
   $('#banner').classList.remove('hide');$('#speed').classList.remove('hide');setSheetH();
   wakeOn();say('Navigasyon başladı');
   if(sim)startSim();else{navTick();followView()}
@@ -511,6 +560,83 @@ function startSim(){
   const tick=()=>{if(!S.nav)return;a=Math.min(S.total,a+v*0.5);const pt=pointAt(a);update({lat:pt.lat,lng:pt.lng,heading:pt.heading,speed:v,acc:5})};
   tick();S.sim=setInterval(tick,500);
 }
+
+/* ---------- mekanlar (OpenStreetMap / Overpass) ---------- */
+const OVP=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
+async function overpass(q){for(const u of OVP){try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)});if(r.ok){const j=await r.json();return j.elements||[]}}catch(e){}}throw new Error('overpass')}
+const AM={pharmacy:['💊','Eczane'],hospital:['🏥','Hastane'],clinic:['🩺','Klinik'],doctors:['🩺','Doktor'],dentist:['🦷','Diş hekimi'],fuel:['⛽','Akaryakıt'],charging_station:['🔌','Şarj istasyonu'],
+  atm:['🏧','ATM'],bank:['🏦','Banka'],restaurant:['🍽️','Restoran'],cafe:['☕','Kafe'],fast_food:['🍔','Fast food'],bar:['🍺','Bar'],place_of_worship:['🕌','Cami / ibadethane'],
+  parking:['🅿️','Otopark'],police:['👮','Polis'],post_office:['📮','PTT'],school:['🏫','Okul'],university:['🎓','Üniversite'],toilets:['🚻','Tuvalet'],marketplace:['🧺','Pazar yeri'],
+  bus_station:['🚌','Otogar'],veterinary:['🐾','Veteriner'],cinema:['🎬','Sinema'],library:['📚','Kütüphane'],townhall:['🏛️','Belediye']};
+const SH={supermarket:['🛒','Market'],convenience:['🛒','Bakkal / market'],bakery:['🥖','Fırın'],butcher:['🥩','Kasap'],greengrocer:['🍎','Manav'],clothes:['👕','Giyim'],shoes:['👟','Ayakkabı'],
+  hairdresser:['💈','Kuaför / berber'],beauty:['💅','Güzellik'],mobile_phone:['📱','Telefoncu'],electronics:['🔌','Elektronik'],hardware:['🔧','Hırdavat'],car_repair:['🔧','Oto tamir'],car:['🚗','Oto galeri'],
+  optician:['👓','Optik'],jewelry:['💍','Kuyumcu'],florist:['💐','Çiçekçi'],books:['📚','Kitapçı'],stationery:['✏️','Kırtasiye'],furniture:['🛋️','Mobilya'],kiosk:['🗞️','Büfe'],
+  mall:['🏬','AVM'],department_store:['🏬','Mağaza'],pastry:['🍰','Pastane'],confectionery:['🍬','Şekerci'],chemist:['🧴','Kozmetik'],pet:['🐾','Pet shop'],sports:['⚽','Spor'],toys:['🧸','Oyuncak']};
+function poiType(t){if(t.amenity&&AM[t.amenity])return AM[t.amenity];if(t.shop)return SH[t.shop]||['🛍️','Mağaza'];
+  if(t.tourism==='hotel'||t.tourism==='guest_house')return['🏨','Otel'];if(t.tourism==='museum')return['🏛️','Müze'];if(t.tourism)return['📷','Gezilecek yer'];
+  if(t.leisure==='park')return['🌳','Park'];if(t.healthcare)return['🩺','Sağlık'];return['📍','Mekan']}
+function normPoi(e){const t=e.tags||{},lat=e.lat!=null?e.lat:e.center&&e.center.lat,lng=e.lon!=null?e.lon:e.center&&e.center.lon;
+  const[ic,label]=poiType(t);const st=t['addr:street']?t['addr:street']+(t['addr:housenumber']?' No: '+t['addr:housenumber']:''):'';
+  const addr=[st,t['addr:neighbourhood']||t['addr:suburb'],t['addr:district']||t['addr:city']].filter(Boolean).join(', ');
+  return{id:e.type+e.id,lat,lng,ic,label,t,addr,name:t.name||t.brand||label,sub:(t.brand&&t.brand!==t.name?t.brand+' · ':'')+label+(addr?' · '+addr:'')}}
+const DAYS={Mo:'Pzt',Tu:'Sal',We:'Çar',Th:'Per',Fr:'Cum',Sa:'Cmt',Su:'Paz',PH:'Resmî tatil',off:'kapalı'};
+const ohTr=s=>s.replace('24/7','7/24 açık').replace(/\b(Mo|Tu|We|Th|Fr|Sa|Su|PH|off)\b/g,m=>DAYS[m]).replace(/;\s*/g,' · ');
+
+S.poiOn=store.get('yol_poi',true);S.poiM=[];S.poiBox=null;let poiBusy=false,selPoi=null;
+const setPoiBtn=()=>$('#lPoi').classList.toggle('on',S.poiOn);setPoiBtn();
+$('#lPoi').onclick=()=>{S.poiOn=!S.poiOn;store.set('yol_poi',S.poiOn);setPoiBtn();if(!S.poiOn)clearPois();else{S.poiBox=null;loadPois()}};
+function clearPois(){S.poiM.forEach(m=>map.removeLayer(m));S.poiM=[];S.poiBox=null}
+function drawPois(list){clearPois();list.forEach(p=>{if(p.lat==null)return;
+  const m=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'poiI',html:`<div class="poi">${p.ic}</div>`,iconSize:[30,30],iconAnchor:[15,15]}),onClick:()=>showPoi(p,m)}).addTo(map);S.poiM.push(m)})}
+async function loadPois(){
+  if(!S.poiOn||S.nav||poiBusy||map.getZoom()<16){if(map.getZoom()<15.5&&S.poiM.length&&!selPoi)clearPois();return}
+  const b=map.getBounds(),bx=S.poiBox;if(bx&&b.n<=bx.n&&b.s>=bx.s&&b.e<=bx.e&&b.w>=bx.w)return;
+  const dy=(b.n-b.s)*.3,dx=(b.e-b.w)*.3,q={n:b.n+dy,s:b.s-dy,e:b.e+dx,w:b.w-dx},bb=`${q.s},${q.w},${q.n},${q.e}`;
+  const amre='^('+Object.keys(AM).join('|')+')$';
+  poiBusy=true;
+  try{const el=await overpass(`[out:json][timeout:20];(nwr["amenity"~"${amre}"](${bb});nwr["shop"](${bb});nwr["tourism"~"^(hotel|guest_house|museum|attraction)$"](${bb}););out center tags 350;`);
+    if(map.getZoom()>=16&&!S.nav){drawPois(el.map(normPoi));S.poiBox=q}}
+  catch(e){toast('Mekanlar yüklenemedi')}
+  poiBusy=false;
+}
+map.on('moveend',loadPois);
+function hidePoi(){$('#poi').classList.add('hide');if(selPoi){const e=selPoi.getElement();e&&e.firstChild.classList.remove('sel');selPoi=null}setSheetH()}
+$('#pX').onclick=hidePoi;
+function showPoi(p,m){
+  hideRes();$('#lmenu').classList.add('hide');if(selPoi){const e=selPoi.getElement();e&&e.firstChild.classList.remove('sel')}
+  selPoi=m||null;if(m&&m.getElement())m.getElement().firstChild.classList.add('sel');
+  const t=p.t,rows=[];
+  if(p.addr)rows.push(['📍',esc(p.addr)]);
+  if(S.pos)rows.push(['📏',fmtD(hav([S.pos.lat,S.pos.lng],[p.lat,p.lng]))+' uzaklıkta']);
+  if(t.opening_hours)rows.push(['🕒',esc(ohTr(t.opening_hours))]);
+  const ph=t.phone||t['contact:phone'];if(ph)rows.push(['📞',`<a href="tel:${esc(ph.split(';')[0].replace(/\s/g,''))}">${esc(ph)}</a>`]);
+  const web=t.website||t['contact:website'];if(web)rows.push(['🌐',`<a href="${esc(/^https?:/.test(web)?web:'https://'+web)}" target="_blank">${esc(web.replace(/^https?:\/\//,''))}</a>`]);
+  if(t.cuisine)rows.push(['🍴',esc(t.cuisine.replace(/;/g,', '))]);
+  if(t.wheelchair==='yes')rows.push(['♿','Engelli erişimine uygun']);
+  if(t.dispensing==='yes')rows.push(['💊','Reçeteli ilaç verilir']);
+  $('#pIc').textContent=p.ic;$('#pName').textContent=p.name;$('#pType').textContent=(t.brand&&t.brand!==t.name?t.brand+' · ':'')+p.label;
+  $('#pInfo').innerHTML=rows.map(r=>`<div><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')||'<div class="mut">Ek bilgi yok</div>';
+  $('#pCall').classList.toggle('hide',!ph);$('#pCall').onclick=()=>{location.href='tel:'+ph.split(';')[0].replace(/\s/g,'')};
+  $('#pGo').onclick=()=>{hidePoi();setDest({name:p.name,sub:p.sub,lat:p.lat,lng:p.lng})};
+  $('#poi').classList.remove('hide');setSheetH();
+  S.follow=false;$('#fLoc').classList.add('off');
+}
+const CAT={eczane:['Eczaneler','nwr["amenity"="pharmacy"]'],benzin:['Akaryakıt istasyonları','nwr["amenity"="fuel"]'],market:['Marketler','nwr["shop"~"^(supermarket|convenience)$"]'],
+  atm:['ATM ve bankalar','nwr["amenity"~"^(atm|bank)$"]'],hastane:['Hastane ve klinikler','nwr["amenity"~"^(hospital|clinic)$"]'],otopark:['Otoparklar','nwr["amenity"="parking"]'],
+  restoran:['Restoranlar','nwr["amenity"~"^(restaurant|fast_food)$"]'],kafe:['Kafeler','nwr["amenity"="cafe"]'],cami:['Camiler','nwr["amenity"="place_of_worship"]["religion"="muslim"]']};
+document.querySelectorAll('#chips [data-c]').forEach(b=>b.onclick=async()=>{
+  const[title,sel]=CAT[b.dataset.c],c=S.pos||map.getCenter();loading(true);
+  try{let el=await overpass(`[out:json][timeout:20];${sel}(around:2500,${c.lat},${c.lng});out center tags 80;`);
+    if(el.length<3)el=await overpass(`[out:json][timeout:25];${sel}(around:8000,${c.lat},${c.lng});out center tags 80;`);
+    const list=el.map(normPoi).filter(p=>p.lat!=null).sort((a,b)=>hav([c.lat,c.lng],[a.lat,a.lng])-hav([c.lat,c.lng],[b.lat,b.lng])).slice(0,40);
+    loading(false);
+    if(!list.length){toast('Yakında bulunamadı');return}
+    drawPois(list);S.poiBox={n:-90,s:90,e:-180,w:180};
+    map.fitBounds(L.latLngBounds(list.slice(0,10).map(p=>[p.lat,p.lng]).concat([[c.lat,c.lng]])),{paddingTopLeft:[40,200],paddingBottomRight:[40,80]});
+    S.follow=false;$('#fLoc').classList.add('off');
+    renderRes(list,false,title+' · yakından uzağa',p=>{hideRes();const m=S.poiM.find(x=>Math.abs(x.ll.lat-p.lat)<1e-7&&Math.abs(x.ll.lng-p.lng)<1e-7);map.setView([p.lat,p.lng],17);showPoi(p,m)});
+  }catch(e){loading(false);toast('Mekanlar yüklenemedi, internet bağlantısını kontrol edin')}
+});
 
 setSheetH();
 if(window.Capacitor&&Cap.Geolocation&&Cap.Geolocation.requestPermissions)Cap.Geolocation.requestPermissions().catch(()=>{});
